@@ -9,8 +9,9 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.middleware.sessions import SessionMiddleware
 
-from . import capture, store
+from . import auth, capture, store
 from .scheduler import next_capture, scheduler
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -22,6 +23,7 @@ FRONTEND_DIR = Path(os.environ.get("FRONTEND_DIR", "/app/public"))
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     store.DATA_DIR.mkdir(parents=True, exist_ok=True)
+    auth.check_config()
     store.migrate_legacy_files()
     store.load_settings()  # migrates settings.json if needed
     scheduler.start()
@@ -30,7 +32,18 @@ async def lifespan(_: FastAPI):
     await scheduler.stop()
 
 
-app = FastAPI(title="ANRAN Timelapse", lifespan=lifespan)
+app = FastAPI(title="ANRAN Timelapse", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+# Added last = outermost: the session is decoded before AuthMiddleware runs.
+app.add_middleware(auth.AuthMiddleware)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=auth.session_secret(),
+    session_cookie="anran_session",
+    max_age=auth.SESSION_DAYS * 86400,
+    same_site="lax",
+    https_only=auth.SECURE_COOKIE,
+)
+app.include_router(auth.router)
 
 
 class GlobalUpdate(BaseModel):

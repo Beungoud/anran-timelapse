@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState } from "react";
-import { Aperture, LayoutDashboard, Moon, Settings, Sun, SunMoon } from "lucide-react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { Aperture, LayoutDashboard, LogOut, Moon, Settings, Sun, SunMoon } from "lucide-react";
 import { api } from "./api.js";
 import { navigate, useHashRoute, usePoll, useTheme } from "./hooks.js";
 import { BatteryPill } from "./components/Battery.jsx";
@@ -21,6 +21,10 @@ export default function App() {
   const toasts = useToasts();
   const [capturing, setCapturing] = useState(false);
   const overview = usePoll(api.overview, capturing ? 2000 : 5000, [capturing]);
+  const [me, setMe] = useState(null);
+  useEffect(() => {
+    api.me().then(setMe).catch(() => setMe(null));
+  }, []);
   const data = overview.data;
 
   const captureNow = async (seriesIds) => {
@@ -85,6 +89,17 @@ export default function App() {
           </nav>
           <div className="topbar-end">
             <BatteryPill battery={data?.battery} onClick={() => navigate("")} />
+            {me?.enabled && me.user && (
+              <div className="user-chip" title={me.user.email || me.user.username}>
+                <span className="avatar" aria-hidden="true">
+                  {me.user.username.slice(0, 1).toUpperCase()}
+                </span>
+                <span className="user-name">{me.user.username}</span>
+                <a className="icon-btn small" href="/auth/logout" aria-label="Se déconnecter" title="Se déconnecter">
+                  <LogOut size={15} />
+                </a>
+              </div>
+            )}
             <button
               className="icon-btn"
               onClick={() => setTheme(NEXT_THEME[theme])}

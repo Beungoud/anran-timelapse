@@ -446,6 +446,38 @@ img {
   outline-offset: 2px;
 }
 
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 4px 0 4px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 14px;
+  font-weight: 560;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.user-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ---------- Battery ---------- */
 
 .battery-pill {
@@ -1561,7 +1593,8 @@ input.switch:checked::after {
     padding: 10px 16px;
   }
 
-  .brand span:last-child {
+  .brand span:last-child,
+  .user-name {
     display: none;
   }
 

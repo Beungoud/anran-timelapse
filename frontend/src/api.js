@@ -1,4 +1,13 @@
+export const goToLogin = () => {
+  const next = `${window.location.pathname}${window.location.hash}`;
+  window.location.href = `/auth/login?next=${encodeURIComponent(next)}`;
+};
+
 const unwrap = async (res) => {
+  if (res.status === 401) {
+    goToLogin();
+    throw new Error("Session expirée, reconnexion…");
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const detail = Array.isArray(body.detail) ? body.detail[0]?.msg : body.detail;
@@ -20,6 +29,7 @@ const qs = (params) => {
 };
 
 export const api = {
+  me: () => json("/auth/me"),
   overview: () => json("/api/overview"),
   battery: (hours = 48) => json(`/api/battery?hours=${hours}`),
   refreshBattery: () => json("/api/battery/refresh", { method: "POST" }),

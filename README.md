@@ -54,6 +54,52 @@ Mise à jour : **Projet → anran-timelapse → Action → Construire** (re-tél
 > est de créer le fichier en SSH (`sudo vi /volume1/docker/anran-timelapse/.env`)
 > ou de le téléverser depuis l'ordinateur.
 
+## Authentification (OpenID Connect)
+
+Sans configuration, l'interface est ouverte à tout le réseau. Dès que
+`OIDC_ISSUER` est renseigné, toute l'application (interface, API, images,
+vidéos) exige une connexion via le fournisseur OpenID Connect : Synology SSO
+Server, Authelia, Authentik, Keycloak, Google…
+
+### Avec le SSO Server du Synology
+
+1. **Centre de paquets** → installer **SSO Server**.
+2. **SSO Server → Paramètres généraux** : l'URL du serveur doit être en
+   **HTTPS** avec un certificat valide (ex. `https://nas.exemple.synology.me`,
+   certificat Let's Encrypt de DSM).
+3. **SSO Server → Service → OIDC** : activer, puis copier l'**URL Well-known**.
+4. **SSO Server → Liste des applications → Ajouter → OIDC** :
+   - nom : `ANRAN Timelapse`
+   - URI de redirection : `<PUBLIC_URL>/auth/callback`, exactement, port compris
+     (ex. `http://192.168.1.10:8787/auth/callback`)
+   - noter l'**ID d'application** et le **secret**.
+5. Compléter le `.env` puis recréer le conteneur :
+
+```ini
+PUBLIC_URL=http://192.168.1.10:8787
+OIDC_ISSUER=https://nas.exemple.synology.me/webman/sso/.well-known/openid-configuration
+OIDC_CLIENT_ID=<ID d'application>
+OIDC_CLIENT_SECRET=<secret>
+OIDC_SCOPES=openid email groups
+OIDC_ALLOWED_USERS=benoit          # comptes DSM autorisés (optionnel)
+OIDC_ALLOWED_GROUPS=               # ou groupes DSM autorisés (optionnel)
+```
+
+Points d'attention :
+
+- Le **conteneur** doit pouvoir joindre l'URL du SSO Server (découverte, échange
+  du code, clés de signature) et le **navigateur** aussi. Si le nom public ne
+  résout pas depuis le réseau local (pas de NAT loopback), ajouter
+  `extra_hosts: ["nas.exemple.synology.me:192.168.1.10"]` au compose.
+- Sans `OIDC_ALLOWED_USERS` ni `OIDC_ALLOWED_GROUPS`, **tout compte DSM** peut se
+  connecter.
+- Le cookie de session est signé (clé `SESSION_SECRET` ou générée dans
+  `data/.session-secret`) et dure 30 jours (`SESSION_MAX_AGE_DAYS`). Il est
+  marqué `Secure` quand `PUBLIC_URL` est en HTTPS.
+- Pour exposer l'application hors du réseau local, passer par le **proxy inversé
+  de DSM** (Portail de connexion → Avancé → Proxy inversé) en HTTPS, et mettre
+  cette URL HTTPS dans `PUBLIC_URL`.
+
 ## Déploiement depuis les sources (tout serveur Docker)
 
 ```bash
