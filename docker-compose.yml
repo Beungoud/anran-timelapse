@@ -1,0 +1,14 @@
+services:
+  anran-timelapse:
+    build:
+      context: .
+    image: anran-timelapse:latest
+    container_name: anran-timelapse
+    env_file: .env
+    environment:
+      - TZ=${TZ:-Europe/Paris}
+    volumes:
+      - ./data:/data
+    ports:
+      - "${WEB_PORT:-8787}:8787"
+    restart: unless-stopped

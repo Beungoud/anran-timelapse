@@ -1,0 +1,22 @@
+# Projet Container Manager (Synology DSM 7.2+).
+# Dossier conseillé : /volume1/docker/anran-timelapse
+#   ├── docker-compose.yml   (ce fichier)
+#   ├── .env                 (copie de .env.example, avec tes identifiants)
+#   └── data/                (créé automatiquement : images, vidéos, réglages)
+services:
+  anran-timelapse:
+    image: ghcr.io/beungoud/anran-timelapse:latest
+    container_name: anran-timelapse
+    env_file: .env
+    environment:
+      - TZ=${TZ:-Europe/Paris}
+    volumes:
+      - ./data:/data
+    ports:
+      - "${WEB_PORT:-8787}:8787"
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
