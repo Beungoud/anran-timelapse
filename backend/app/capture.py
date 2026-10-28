@@ -267,6 +267,53 @@ def delete_day(series_id: str, date: str) -> int:
     return removed
 
 
+FRAME_NAME_RE = re.compile(r"^\d{6}(-\d+)?\.jpg$")
+TRASH_KEEP_DAYS = 7
+
+
+def _trash_path(series_id: str, date: str, name: str) -> Path:
+    return store.trash_dir(series_id) / f"{date}_{name}"
+
+
+def delete_frame(series_id: str, date: str, name: str) -> bool:
+    """Move one frame to the series trash (restorable for TRASH_KEEP_DAYS)."""
+    if not FRAME_NAME_RE.match(name):
+        return False
+    src = store.frames_dir(series_id) / date.replace("-", "/") / name
+    if not src.is_file():
+        return False
+    dest = _trash_path(series_id, date, name)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(src), str(dest))
+    os.utime(dest)  # trash age counts from the deletion
+    return True
+
+
+def restore_frame(series_id: str, date: str, name: str) -> bool:
+    if not FRAME_NAME_RE.match(name):
+        return False
+    src = _trash_path(series_id, date, name)
+    if not src.is_file():
+        return False
+    dest_dir = store.frames_dir(series_id) / date.replace("-", "/")
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(src), str(dest_dir / name))
+    return True
+
+
+def empty_trash(series_id: str, keep_days: int = TRASH_KEEP_DAYS) -> int:
+    root = store.trash_dir(series_id)
+    if not root.exists():
+        return 0
+    limit = datetime.now().timestamp() - keep_days * 86400
+    removed = 0
+    for path in root.glob("*.jpg"):
+        if path.stat().st_mtime < limit:
+            path.unlink(missing_ok=True)
+            removed += 1
+    return removed
+
+
 def delete_video(series_id: str, name: str) -> bool:
     if not re.match(r"^[0-9A-Za-z_-]{1,40}$", name):
         return False

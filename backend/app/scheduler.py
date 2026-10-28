@@ -208,6 +208,7 @@ class Scheduler:
             state["lastRetentionDate"] = today
             store.save_state(state)
             for series in settings["series"]:
+                await asyncio.to_thread(capture.empty_trash, series["id"])
                 removed = await asyncio.to_thread(
                     capture.prune_retention, series["id"], series["retentionDays"]
                 )

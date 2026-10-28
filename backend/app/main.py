@@ -220,6 +220,24 @@ def delete_day(series_id: str, date: str) -> dict:
     return {"ok": True, "removed": capture.delete_day(series_id, date)}
 
 
+@app.delete("/api/series/{series_id}/frames/{date}/{name}")
+def delete_frame(series_id: str, date: str, name: str) -> dict:
+    _series_or_404(series_id)
+    _check_date(date)
+    if not capture.delete_frame(series_id, date, name):
+        raise HTTPException(404, "image inconnue")
+    return {"ok": True}
+
+
+@app.post("/api/series/{series_id}/frames/{date}/{name}/restore")
+def restore_frame(series_id: str, date: str, name: str) -> dict:
+    _series_or_404(series_id)
+    _check_date(date)
+    if not capture.restore_frame(series_id, date, name):
+        raise HTTPException(404, "image introuvable dans la corbeille")
+    return {"ok": True}
+
+
 @app.get("/api/series/{series_id}/videos")
 def series_videos(series_id: str) -> list[dict]:
     _series_or_404(series_id)

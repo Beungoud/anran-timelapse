@@ -93,11 +93,11 @@ function VideoPanel({ seriesId, videos, onDeleted, preferred }) {
 export default function SeriesView({ id }) {
   const { overview, captureNow, capturing, toast, reloadOverview } = useApp();
   const fromOverview = overview?.series.find((s) => s.id === id);
-  const series = usePoll(() => api.series(id), 10000, [id, fromOverview?.stats.frames]);
+  const series = usePoll(() => api.series(id), 10000, [id]);
   const s = series.data || fromOverview;
   const isDaily = s?.mode === "daily";
 
-  const days = usePoll(() => api.days(id), 0, [id, s?.stats.frames]);
+  const days = usePoll(() => api.days(id), 0, [id]);
   const videos = usePoll(() => api.videos(id), 0, [id]);
   const [day, setDay] = useState(null);
   const [period, setPeriod] = useState("30");
@@ -118,8 +118,19 @@ export default function SeriesView({ id }) {
   const frames = usePoll(
     () => (range ? api.frames(id, range.start, range.end) : Promise.resolve([])),
     0,
-    [id, range?.start, range?.end, s?.stats.frames],
+    [id, range?.start, range?.end],
   );
+
+  // New capture or deletion: refresh in place, without blanking the lists
+  // (the explorer keeps its position).
+  const frameCount = fromOverview?.stats.frames;
+  useEffect(() => {
+    if (frameCount === undefined) return;
+    series.reload();
+    days.reload();
+    frames.reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frameCount]);
 
   if (series.error && !s) return <div className="empty-state error">{series.error}</div>;
   if (!s) return <div className="skeleton" />;
@@ -158,6 +169,38 @@ export default function SeriesView({ id }) {
   };
 
   const frameList = frames.data ?? [];
+
+  const refreshAfterFrameChange = () =>
+    Promise.all([frames.reload(), days.reload(), series.reload(), reloadOverview()]);
+
+  const deleteFrame = async (frame) => {
+    try {
+      await api.deleteFrame(id, frame.date, frame.name);
+    } catch (err) {
+      toast({ type: "error", text: String(err.message || err) });
+      return;
+    }
+    await refreshAfterFrameChange();
+    const hasVideo = (videos.data ?? []).length > 0;
+    toast({
+      type: "ok",
+      text: `Image du ${fmtDate(frame.date, { day: "numeric", month: "short" })} à ${frame.time.slice(0, 5)} supprimée.${
+        hasVideo ? " Ré-assemble la vidéo pour la mettre à jour." : ""
+      }`,
+      action: {
+        label: "Annuler",
+        onClick: async () => {
+          try {
+            await api.restoreFrame(id, frame.date, frame.name);
+            await refreshAfterFrameChange();
+            toast({ type: "ok", text: "Image restaurée" });
+          } catch (err) {
+            toast({ type: "error", text: String(err.message || err) });
+          }
+        },
+      },
+    });
+  };
   const assembleLabel = isDaily
     ? period === "all"
       ? "Assembler toute la période"
@@ -222,7 +265,7 @@ export default function SeriesView({ id }) {
           <header className="card-head">
             <div>
               <h2>Images</h2>
-              <p className="muted">Flèches ← → pour parcourir, ▶ pour un aperçu animé.</p>
+              <p className="muted">Flèches ← → pour parcourir, ▶ pour un aperçu animé, Suppr pour retirer une image.</p>
             </div>
           </header>
           {isDaily ? (
@@ -245,7 +288,12 @@ export default function SeriesView({ id }) {
               ))}
             </div>
           )}
-          <FrameExplorer frames={frameList} showDate={isDaily} />
+          <FrameExplorer
+            frames={frameList}
+            showDate={isDaily}
+            resetKey={`${range?.start}|${range?.end}`}
+            onDelete={deleteFrame}
+          />
           <div className="card-foot">
             <button className="btn" onClick={assemble} disabled={assembling || !frameList.length}>
               {assembling ? <Loader2 size={16} className="spin" /> : <Clapperboard size={16} />}

@@ -139,6 +139,12 @@ séries sont créées par défaut :
   La batterie est relevée dans le cloud toutes les 15 min et après chaque
   capture, sans réveiller la caméra.
 
+- **Supprimer une image** (élément perturbateur, image ratée) : bouton corbeille
+  sur l'image affichée ou touche Suppr dans la page de la série. L'image part
+  dans la corbeille de la série (`series/<id>/trash/`), restaurable via
+  « Annuler », et vidée automatiquement après 7 jours. Ré-assembler la vidéo
+  concernée pour la mettre à jour.
+
 > Le niveau de batterie n'est mis à jour côté cloud que lorsque la caméra se
 > manifeste (réveil, détection). Une série en pause compte donc sur les autres
 > réveils (ex. la capture de midi) pour constater que la batterie est remontée.
@@ -159,6 +165,7 @@ séries sont créées par défaut :
 data/
 ├── series/<id>/frames/YYYY/MM/DD/HHMMSS.jpg   # images de la série
 ├── series/<id>/videos/<nom>.mp4                # YYYY-MM-DD, complet, début_fin
+├── series/<id>/trash/                          # images supprimées (7 j)
 ├── settings.json                               # réglages globaux + séries
 ├── captures.jsonl                              # journal des captures (60 j)
 ├── battery.jsonl                               # historique batterie (60 j)

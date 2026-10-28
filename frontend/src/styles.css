@@ -426,10 +426,25 @@ img {
   height: 26px;
 }
 
-.icon-btn.overlay {
+.stage-tools {
   position: absolute;
   top: 12px;
   right: 12px;
+  display: flex;
+  gap: 6px;
+}
+
+.icon-btn.overlay.danger-hover:hover {
+  background: var(--critical);
+}
+
+.toast-action {
+  flex: none;
+  margin: -4px 0;
+  color: var(--accent);
+}
+
+.icon-btn.overlay {
   background: rgb(0 0 0 / 45%);
   color: #fff;
   backdrop-filter: blur(6px);

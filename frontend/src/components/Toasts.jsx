@@ -10,7 +10,8 @@ export function useToasts() {
     (toast) => {
       const id = Math.random().toString(36).slice(2);
       setItems((list) => [...list.slice(-3), { ...toast, id }]);
-      setTimeout(() => dismiss(id), toast.type === "error" ? 9000 : 4500);
+      const ttl = toast.action ? 8000 : toast.type === "error" ? 9000 : 4500;
+      setTimeout(() => dismiss(id), ttl);
     },
     [dismiss],
   );
@@ -26,6 +27,17 @@ export function Toasts({ items, dismiss }) {
           <div key={t.id} className={`toast ${t.type}`}>
             <Icon size={18} />
             <span>{t.text}</span>
+            {t.action && (
+              <button
+                className="btn ghost small toast-action"
+                onClick={() => {
+                  dismiss(t.id);
+                  t.action.onClick();
+                }}
+              >
+                {t.action.label}
+              </button>
+            )}
             <button className="icon-btn small" onClick={() => dismiss(t.id)} aria-label="Fermer">
               <X size={14} />
             </button>

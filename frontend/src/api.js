@@ -46,6 +46,9 @@ export const api = {
   days: (id) => json(`/api/series/${id}/days`),
   frames: (id, start, end) => json(`/api/series/${id}/frames${qs({ start, end })}`),
   deleteDay: (id, date) => json(`/api/series/${id}/days/${date}`, { method: "DELETE" }),
+  deleteFrame: (id, date, name) => json(`/api/series/${id}/frames/${date}/${name}`, { method: "DELETE" }),
+  restoreFrame: (id, date, name) =>
+    json(`/api/series/${id}/frames/${date}/${name}/restore`, { method: "POST" }),
   videos: (id) => json(`/api/series/${id}/videos`),
   deleteVideo: (id, name) => json(`/api/series/${id}/videos/${name}`, { method: "DELETE" }),
   assemble: (id, start, end) =>

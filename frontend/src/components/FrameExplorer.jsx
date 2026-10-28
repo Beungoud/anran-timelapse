@@ -1,18 +1,39 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, ImageOff, Maximize2, Pause, Play } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageOff, Maximize2, Pause, Play, Trash2 } from "lucide-react";
 import { cap, fmtDate } from "../format.js";
 
 const SPEEDS = [2, 5, 10];
 
-export default function FrameExplorer({ frames, showDate }) {
+/** `resetKey` changes when the period changes (jump to the latest frame);
+ *  a plain reload (e.g. after a deletion) keeps the current position. */
+export default function FrameExplorer({ frames, showDate, resetKey, onDelete }) {
   const [index, setIndex] = useState(Math.max(0, frames.length - 1));
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(5);
   const stripRef = useRef(null);
 
-  useEffect(() => {
-    setIndex(Math.max(0, frames.length - 1));
+  const deleteCurrent = () => {
+    const current = frames[Math.min(index, frames.length - 1)];
+    if (!current || !onDelete) return;
     setPlaying(false);
+    onDelete(current);
+  };
+
+  // Frames for a new period arrive after resetKey changes: jump to the latest
+  // frame once they are there.
+  const pendingReset = useRef(true);
+  useEffect(() => {
+    pendingReset.current = true;
+    setPlaying(false);
+  }, [resetKey]);
+
+  useEffect(() => {
+    if (pendingReset.current && frames.length) {
+      pendingReset.current = false;
+      setIndex(frames.length - 1);
+    } else {
+      setIndex((i) => Math.min(i, Math.max(0, frames.length - 1)));
+    }
   }, [frames]);
 
   useEffect(() => {
@@ -26,10 +47,11 @@ export default function FrameExplorer({ frames, showDate }) {
       if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement?.tagName)) return;
       if (e.key === "ArrowLeft") setIndex((i) => Math.max(0, i - 1));
       if (e.key === "ArrowRight") setIndex((i) => Math.min(frames.length - 1, i + 1));
+      if (e.key === "Delete" && onDelete) deleteCurrent();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [frames.length]);
+  });
 
   useEffect(() => {
     const strip = stripRef.current;
@@ -58,9 +80,21 @@ export default function FrameExplorer({ frames, showDate }) {
           {showDate && <span>{cap(fmtDate(frame.date, { weekday: "long", day: "numeric", month: "long" }))}</span>}
           <span className="mono">{frame.time.slice(0, 5)}</span>
         </div>
-        <a className="icon-btn overlay" href={frame.url} target="_blank" rel="noreferrer" aria-label="Ouvrir en grand">
-          <Maximize2 size={16} />
-        </a>
+        <div className="stage-tools">
+          {onDelete && (
+            <button
+              className="icon-btn overlay danger-hover"
+              onClick={deleteCurrent}
+              aria-label="Supprimer cette image"
+              title="Supprimer cette image (Suppr)"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+          <a className="icon-btn overlay" href={frame.url} target="_blank" rel="noreferrer" aria-label="Ouvrir en grand" title="Ouvrir en grand">
+            <Maximize2 size={16} />
+          </a>
+        </div>
       </div>
 
       <div className="scrubber">

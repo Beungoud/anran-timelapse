@@ -289,6 +289,10 @@ def videos_dir(series_id: str) -> Path:
     return SERIES_DIR / series_id / "videos"
 
 
+def trash_dir(series_id: str) -> Path:
+    return SERIES_DIR / series_id / "trash"
+
+
 def valid_date(date: str) -> bool:
     if not DATE_RE.match(date or ""):
         return False
@@ -316,7 +320,7 @@ def frame_url(series_id: str, path: Path) -> str:
 def _frame_entry(series_id: str, date: str, path: Path) -> dict:
     stem = path.stem.split("-")[0]
     time = f"{stem[0:2]}:{stem[2:4]}:{stem[4:6]}" if len(stem) >= 6 else stem
-    return {"date": date, "time": time, "url": frame_url(series_id, path)}
+    return {"date": date, "time": time, "name": path.name, "url": frame_url(series_id, path)}
 
 
 def list_frames(series_id: str, start: str | None = None, end: str | None = None) -> list[dict]:
